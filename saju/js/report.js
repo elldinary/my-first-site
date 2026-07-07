@@ -227,6 +227,90 @@ const NOBLEMAN_EASY = {
   월덕귀인: '주변 사람들이 나를 두루 아껴 줘요.',
 };
 
+// ---------------------------------------------------------------------------
+// "지난 시간 이야기" — 과거형 콜드 리딩 문장 (전부 규칙 기반, §6.2)
+// 무료 구간에서 신뢰를 만드는 스토리텔링 블록
+// ---------------------------------------------------------------------------
+const DAY_MASTER_PAST = [
+  '한번 아니다 싶으면 잘 안 굽혔죠. 그래서 손해 본 적도 있고요.',            // 甲
+  '싫은 자리에서도 웃으며 맞춰 준 날이 많았을 거예요.',                     // 乙
+  '기분 좋으면 다 퍼줄 것처럼 굴다가, 돌아서서 후회한 적 있죠?',            // 丙
+  '남 걱정을 내 걱정처럼 하다가 혼자 지친 밤이 있었죠.',                    // 丁
+  '주변이 흔들릴 때, 결국 중심을 잡은 건 나였을 거예요.',                   // 戊
+  '티 안 나게 챙겨 줬는데 몰라줘서 서운했던 적, 있었죠?',                   // 己
+  '돌려 말하는 게 어려워서 오해를 산 적이 있었을 거예요.',                  // 庚
+  '대충 한 결과물을 보면 참기 힘들었죠. 내 것이면 더요.',                   // 辛
+  '시작은 크게 했는데 마무리 전에 마음이 떠난 적이 있죠?',                  // 壬
+  '아무렇지 않은 척했지만, 속으로는 백 번쯤 생각했을 거예요.',              // 癸
+];
+
+const VERDICT_PAST = {
+  신강: '남에게 맡기느니 내가 하는 게 빠르다고 느낀 적 많죠.',
+  중화: '양쪽 다 이해가 돼서 중간에서 난처했던 적이 많았을 거예요.',
+  신약: '밖에서는 씩씩한데, 집에 오면 기운이 쭉 빠지곤 했죠.',
+};
+
+const CATEGORY_PAST = {
+  비겁: {
+    excess: '지기 싫어서 혼자 끙끙대며 해낸 일이 유난히 많았죠.',
+    missing: '중요한 결정을 늘 혼자 감당한다고 느꼈을 거예요.',
+  },
+  식상: {
+    excess: '말이 먼저 나가서 아차 싶었던 순간, 있었죠?',
+    missing: '하고 싶은 말을 삼키고 돌아서서 후회한 날이 많았을 거예요.',
+  },
+  재성: {
+    excess: '결과가 눈에 안 보이면 금방 흥미가 식곤 했죠.',
+    missing: '남 챙기느라 내 몫은 자꾸 뒤로 밀렸을 거예요.',
+  },
+  관성: {
+    excess: '어릴 때부터 해야 할 일을 먼저 떠안는 쪽이었죠. 힘들다는 말은 잘 못 했고요.',
+    missing: '정해진 틀 안에 있으면 답답해서 자꾸 벗어나고 싶었죠.',
+  },
+  인성: {
+    excess: '오래 고민하다 시기를 놓친 적이 몇 번 있었을 거예요.',
+    missing: '도와달라는 말이 어려워서 혼자 다 하다 지친 적 있죠?',
+  },
+};
+
+const SINSAL_PAST = {
+  역마: '사는 곳이나 다니는 곳이 자주 바뀌었죠. 그리고 생각보다 잘 적응해냈고요.',
+  도화: '가만히 있어도 먼저 다가오는 사람이 꽤 있었을 거예요.',
+  화개: '혼자 있는 시간이 없으면 이상하게 지치곤 했죠.',
+  반안: '한 번에 크게 오르기보다 한 계단씩 올라온 길이었어요.',
+  장성: '얼떨결에 반장이나 대표 같은 자리를 맡은 적이 있죠?',
+  지살: '몸을 부지런히 움직여야 마음이 놓이는 편이었죠.',
+};
+
+const NOBLEMAN_PAST = {
+  천을귀인: '정말 힘들던 순간, 이상하게 도와주는 사람이 나타나곤 했죠.',
+  문창귀인: '글이나 공부로 칭찬받은 기억이 어릴 때부터 있었을 거예요.',
+  월덕귀인: '크게 싸운 사람 없이 두루 잘 지내 온 편이었죠.',
+};
+
+const PAST_HOOK = '어떻게 알았냐고요? 다 이유가 있어요. 그 이유가 아래에 적혀 있어요.';
+const PAST_SOFT = '다르게 느껴지는 것도 있을 수 있어요. 그것도 그대로 나예요.';
+
+function buildPast(chart, counts, sinsalList, noblemanList) {
+  const items = [];
+  // 구체적인 것부터: 역할 쏠림 → 성향 표시 → 복 → 기운 세기 → 타고난 결
+  for (const [cat, n] of Object.entries(counts)) {
+    if (n >= 3) items.push(CATEGORY_PAST[cat].excess);
+  }
+  for (const [cat, n] of Object.entries(counts)) {
+    if (n === 0) items.push(CATEGORY_PAST[cat].missing);
+  }
+  for (const s of sinsalList) {
+    if (SINSAL_PAST[s]) items.push(SINSAL_PAST[s]);
+  }
+  for (const n of noblemanList) {
+    if (NOBLEMAN_PAST[n]) items.push(NOBLEMAN_PAST[n]);
+  }
+  items.push(VERDICT_PAST[chart.strength.verdict]);
+  items.push(DAY_MASTER_PAST[chart.dayMaster.idx]);
+  return { items: [...new Set(items)].slice(0, 4), hook: PAST_HOOK, soft: PAST_SOFT };
+}
+
 const VERDICT_EASY = {
   신강: {
     label: '기운이 센 편',
@@ -394,6 +478,7 @@ export function buildReport(chart) {
     headline: dm.headline,
     metaphor: dm.metaphor,
     seasonNote,
+    past: buildPast(chart, counts, sinsalList, noblemanList),
     strengths: strengthTop3,
     cautions: cautionTop3,
     lifestyle,
@@ -541,5 +626,11 @@ export function collectStaticCopy() {
   }
   Object.values(SEASON_NOTE).forEach(push);
   Object.values(MONTH_ADVICE).forEach(push);
+  DAY_MASTER_PAST.forEach(push);
+  Object.values(VERDICT_PAST).forEach(push);
+  for (const c of Object.values(CATEGORY_PAST)) { push(c.excess); push(c.missing); }
+  Object.values(SINSAL_PAST).forEach(push);
+  Object.values(NOBLEMAN_PAST).forEach(push);
+  push(PAST_HOOK); push(PAST_SOFT);
   return out;
 }

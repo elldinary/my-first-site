@@ -1,7 +1,12 @@
 /**
  * 쉬운 사주 — 화면 레이어 (§7) + 비즈니스 모델
  *
- * 흐름: 입력 → 맛보기 리포트(무료) → 상세 리포트 잠금 → 결제(19,000원) → 전체 공개
+ * 흐름: 입력 → 무료 리포트(이야기는 다 보여 주되 핵심 단어는 가림) → 결제(19,000원) → 전체 공개
+ *
+ * 무료 구간 전략:
+ *  - "지난 시간 이야기"(과거형 콜드 리딩)와 장점/조심할 점 본문은 전부 공개해 신뢰를 만들고,
+ *  - 해결 팁·충전법·기운 이름·미래 그림·다음 두 달 신호등 같은 "정답"만 블러 처리한다.
+ *  - 블러를 누르면 결제 모달이 열린다.
  *
  * 결제는 현재 "체험 결제"(PG 연동 전 데모)로 동작한다. 실제 연동 시
  * startCheckout()에서 토스페이먼츠/카카오페이 SDK 호출로 교체하면 된다.
@@ -130,6 +135,15 @@ function showReport(params) {
   window.scrollTo(0, 0);
 }
 
+/** 핵심 단어 가림: 무료면 블러 처리(누르면 결제 모달), 유료면 그대로 */
+function mask(s, unlocked) {
+  return unlocked ? s : `<span class="masked" role="button" aria-label="상세 리포트에서 열려요">${s}</span>`;
+}
+
+function easyEls(list) {
+  return list.map((e) => `${ELEMENT_INFO[e].easy}${ELEMENT_INFO[e].emoji}`).join('와 ');
+}
+
 function renderReport(unlocked) {
   const c = currentChart;
   const r = currentReport;
@@ -149,9 +163,15 @@ function renderReport(unlocked) {
       </div>
     </section>
 
-    ${sectionCard('3장 · 미리보기', '나의 다섯 기운', renderElementChart(c))}
+    ${renderPastSection(r)}
 
-    ${unlocked ? renderFullSections(r) : renderPaywall(r)}
+    ${sectionCard('3장', '나의 다섯 기운', renderElementChart(c))}
+
+    ${unlocked ? '' : `<p class="mask-hint">🔒 뿌옇게 가려진 글자는 상세 리포트에서 열려요. 궁금하면 살짝 눌러 보세요.</p>`}
+
+    ${renderStorySections(r, unlocked)}
+
+    ${unlocked ? renderPaidTail() : renderPaywall()}
 
     <section class="report-sec notes">
       ${r.notes.map((n) => `<p>· ${n}</p>`).join('')}
@@ -167,6 +187,9 @@ function renderReport(unlocked) {
     $('#unlock-btn').addEventListener('click', openPayModal);
     const sticky = $('#sticky-cta');
     if (sticky) sticky.addEventListener('click', openPayModal);
+    root.addEventListener('click', (e) => {
+      if (e.target.closest('.masked')) openPayModal();
+    });
   } else {
     bindCompatForm();
   }
@@ -178,6 +201,20 @@ function sectionCard(kicker, title, inner) {
       <p class="sec-kicker">${kicker}</p>
       <h2 class="sec-title">${title}</h2>
       ${inner}
+    </section>`;
+}
+
+// --- 지난 시간 이야기 (무료 공개 — 신뢰를 만드는 콜드 리딩) ---
+function renderPastSection(r) {
+  return `
+    <section class="report-sec">
+      <p class="sec-kicker">혹시… 이랬던 적 있나요?</p>
+      <h2 class="sec-title">지난 시간 이야기 🕰️</h2>
+      <div class="past-card">
+        ${r.past.items.map((t) => `<p class="past-line">“${t}”</p>`).join('')}
+        <p class="past-hook">${r.past.hook}</p>
+        <p class="past-soft">${r.past.soft}</p>
+      </div>
     </section>`;
 }
 
@@ -241,62 +278,11 @@ function renderElementChart(c) {
     <p class="chart-note">지금 나는 <b>${ELEMENT_INFO[domEl].easy}${ELEMENT_INFO[domEl].emoji}</b> 기운이 가장 많아요.${zero.length ? ` <b>${zero.join('·')}</b> 기운은 비어 있어요.` : ''}</p>`;
 }
 
-// --- 유료 구역: 페이월 (비즈니스 모델) ---
-function renderPaywall(r) {
-  const teaser = r.strengths[0];
-  const lockedTitles = [
-    ['🌟', '나의 장점 3가지', '잘하는 것부터 알려 드려요.'],
-    ['🛡️', '조심하면 좋은 점 3가지', '해결 방법까지 같이 드려요.'],
-    ['🔋', '힘을 주는 것 / 지치게 하는 것', '내 배터리 충전법을 알려 드려요.'],
-    ['🎭', '겉모습 vs 속마음', '남이 보는 나와 진짜 나를 비교해요.'],
-    ['🧭', '내 안의 역할들과 미래 그림', '나를 움직이는 힘을 알려 드려요.'],
-    ['🚦', '앞으로 3개월 신호등', '언제 밀고 언제 쉴지 알려 드려요.'],
-    ['💞', '우리 둘 궁합 보기', '좋아하는 사람과의 케미를 봐요.'],
-  ];
-  return `
-    <section class="report-sec">
-      <p class="sec-kicker">미리보기 선물 🎁</p>
-      <h2 class="sec-title">나의 첫 번째 장점</h2>
-      <div class="block-card">
-        <h3>${teaser.title}</h3>
-        <p>${teaser.body}</p>
-      </div>
-      <p class="teaser-more">…이런 이야기가 ${lockedTitles.length}가지 더 준비돼 있어요!</p>
-    </section>
-
-    <section class="report-sec locked-sec">
-      <div class="locked-list">
-        ${lockedTitles.map(([ic, t, sub]) => `
-          <div class="locked-item">
-            <span class="locked-ic">${ic}</span>
-            <div><h3>${t}</h3><p>${sub}</p></div>
-            <span class="lock">🔒</span>
-          </div>`).join('')}
-      </div>
-
-      <div class="paywall-card">
-        <p class="pay-ribbon">출시 기념 · 오늘만 51% 할인</p>
-        <h2>상세 리포트 전부 열기</h2>
-        <p class="pay-price"><s>${LIST_PRICE.toLocaleString()}원</s> <b>${PRICE.toLocaleString()}원</b></p>
-        <ul class="pay-benefits">
-          <li>위 ${lockedTitles.length}가지 이야기 전부</li>
-          <li>궁합 보기 1회 포함</li>
-          <li>7일 안에 마음에 안 들면 전액 환불</li>
-        </ul>
-        <button class="btn-big" id="unlock-btn">19,000원으로 전부 보기 🔓</button>
-        <p class="pay-small">한 번 결제하면 이 사주는 계속 다시 볼 수 있어요.</p>
-      </div>
-    </section>
-
-    <div class="sticky-bar" id="sticky-cta">
-      <span>상세 리포트 <s>${LIST_PRICE.toLocaleString()}원</s> <b>${PRICE.toLocaleString()}원</b></span>
-      <span class="sticky-btn">전부 보기 🔓</span>
-    </div>`;
-}
-
-// --- 유료 구역: 전체 리포트 ---
-function renderFullSections(r) {
+// --- 본문 이야기: 무료/유료 공통 레이아웃, 핵심 단어만 가림 ---
+function renderStorySections(r, u) {
   const oi = r.outerInner;
+  const useNames = easyEls(r.elements.useEls);
+  const avoidNames = r.elements.avoidEls.length ? easyEls(r.elements.avoidEls) : '';
   return `
     <section class="report-sec">
       <p class="sec-kicker">2장 계속</p>
@@ -310,50 +296,53 @@ function renderFullSections(r) {
         ${r.cautions.map((cn) => `
           <div class="block-card caution">
             <p>${cn.text}</p>
-            <p class="tip">💡 ${cn.tip}</p>
+            <p class="tip">💡 ${mask(cn.tip, u)}</p>
           </div>`).join('')}
       </div>
 
       <h2 class="sec-title">나의 생활 스타일 🏡</h2>
       <div class="block-card">
-        ${r.lifestyle.map((l) => `<p>${l}</p>`).join('')}
+        <p>${r.lifestyle[0]}</p>
+        <p>${mask(r.lifestyle[1], u)}</p>
       </div>
 
       <h2 class="sec-title">겉모습 vs 속마음 🎭</h2>
       <div class="block-grid two">
         <div class="block-card"><h3>겉모습</h3><p>${oi.outer}</p></div>
-        <div class="block-card"><h3>속마음</h3><p>${oi.inner}</p></div>
+        <div class="block-card"><h3>속마음</h3><p>${mask(oi.inner, u)}</p></div>
       </div>
-      ${oi.same ? `<p class="chart-note">${oi.sameNote}</p>` : ''}
+      ${oi.same && u ? `<p class="chart-note">${oi.sameNote}</p>` : ''}
     </section>
 
     <section class="report-sec">
       <p class="sec-kicker">3장 계속 · 나의 다섯 기운</p>
       <h2 class="sec-title">나에게 힘을 주는 것 🔋</h2>
       <div class="block-card good">
-        <p>${r.elements.useText}</p>
-        ${r.elements.useTips.map((t) => `<p class="tip">💡 ${t}</p>`).join('')}
+        <p>나에게 힘을 주는 건 ${mask(useNames, u)} 기운이에요. 배터리 충전 같은 거예요.</p>
+        ${r.elements.useTips.map((t) => `<p class="tip">💡 ${mask(t, u)}</p>`).join('')}
       </div>
       <h2 class="sec-title">나를 지치게 하는 것 🪫</h2>
       <div class="block-card caution">
-        <p>${r.elements.avoidText}</p>
+        <p>${avoidNames
+          ? `${mask(avoidNames, u)} 기운이 지나치면 나를 지치게 해요. 힘 빠지는 날엔 충전 기운을 챙기면 돼요.`
+          : r.elements.avoidText}</p>
       </div>
       <h2 class="sec-title">내 기운은 센 편? 약한 편? 💪</h2>
       <div class="block-card">
-        <p><b>${r.elements.verdictLabel}</b>이에요.</p>
-        <p>${r.elements.verdictBody}</p>
+        <p><b>${mask(r.elements.verdictLabel, u)}</b>이에요.</p>
+        <p>${mask(r.elements.verdictBody, u)}</p>
         <div class="meter"><div class="meter-fill" style="width:${r.elements.score}%"></div></div>
         <p class="meter-cap">기운 점수 ${r.elements.score}점 / 100점</p>
       </div>
       <h2 class="sec-title">내가 그리는 미래 그림 🖼️</h2>
-      <div class="block-card"><p>${r.elements.futureText}</p></div>
+      <div class="block-card"><p>${mask(r.elements.futureText, u)}</p></div>
     </section>
 
     <section class="report-sec">
       <p class="sec-kicker">4장 · 내 안의 역할들</p>
       <h2 class="sec-title">나를 움직이는 힘 🧭</h2>
       <div class="block-card">
-        <h3>${r.roles.mainTitle}</h3>
+        <h3>${mask(r.roles.mainTitle, u)}</h3>
         <p>${r.roles.mainBody}</p>
       </div>
       <h2 class="sec-title">사람들과 어울리는 방식 🫶</h2>
@@ -374,15 +363,51 @@ function renderFullSections(r) {
       <p class="sec-kicker">5장 · 앞으로 3개월</p>
       <h2 class="sec-title">다가올 석 달 신호등 🚦</h2>
       <div class="month-grid">
-        ${r.months.map((mo) => `
-          <div class="month-card sig-${mo.signal}">
+        ${r.months.map((mo, i) => {
+          const open = u || i === 0;
+          const light = mo.signal === '좋음' ? '🟢' : mo.signal === '보통' ? '🟡' : '🔴';
+          return `
+          <div class="month-card ${open ? `sig-${mo.signal}` : 'sig-locked'}">
             <p class="month-label">${mo.label} (${mo.monthNum}월)</p>
-            <p class="month-sig">${mo.signal === '좋음' ? '🟢' : mo.signal === '보통' ? '🟡' : '🔴'} ${mo.signal}</p>
-            <p class="month-adv">${mo.advice}</p>
-          </div>`).join('')}
+            <p class="month-sig">${open ? `${light} ${mo.signal}` : `🔒 ${mask(mo.signal, u)}`}</p>
+            <p class="month-adv">${open ? mo.advice : mask(mo.advice, u)}</p>
+          </div>`;
+        }).join('')}
+      </div>
+      ${u ? '' : '<p class="chart-note">이번 달은 열어 뒀어요. 다음 두 달은 상세 리포트에서 열려요.</p>'}
+    </section>`;
+}
+
+// --- 무료: 페이월 (비즈니스 모델) ---
+function renderPaywall() {
+  return `
+    <section class="report-sec">
+      <div class="paywall-card">
+        <p class="pay-ribbon">출시 기념 · 오늘만 51% 할인</p>
+        <h2>가려진 글자, 전부 열어 볼까요?</h2>
+        <p class="pay-price"><s>${LIST_PRICE.toLocaleString()}원</s> <b>${PRICE.toLocaleString()}원</b></p>
+        <ul class="pay-benefits">
+          <li>조심할 점의 해결 방법 전부</li>
+          <li>나를 충전하는 법 (색·활동·습관)</li>
+          <li>속마음 이야기와 미래 그림</li>
+          <li>다음 두 달 신호등과 조언</li>
+          <li>우리 둘 궁합 보기 포함 💞</li>
+          <li>7일 안에 마음에 안 들면 전액 환불</li>
+        </ul>
+        <button class="btn-big" id="unlock-btn">19,000원으로 전부 보기 🔓</button>
+        <p class="pay-small">한 번 결제하면 이 사주는 계속 다시 볼 수 있어요.</p>
       </div>
     </section>
 
+    <div class="sticky-bar" id="sticky-cta">
+      <span>가려진 글자 열기 <s>${LIST_PRICE.toLocaleString()}원</s> <b>${PRICE.toLocaleString()}원</b></span>
+      <span class="sticky-btn">전부 보기 🔓</span>
+    </div>`;
+}
+
+// --- 유료: 궁합 + 안내 ---
+function renderPaidTail() {
+  return `
     <section class="report-sec" id="compat-sec">
       <p class="sec-kicker">6장 · 우리 둘 궁합</p>
       <h2 class="sec-title">좋아하는 사람과의 케미 💞</h2>
@@ -482,7 +507,7 @@ function startCheckout() {
       <div class="pay-done">
         <p class="pay-done-emoji">🎉</p>
         <h2>결제 완료!</h2>
-        <p>이제 내 이야기를 전부 볼 수 있어요.</p>
+        <p>이제 가려진 글자가 전부 열렸어요.</p>
         <button class="btn-big" id="pay-open">상세 리포트 열기</button>
       </div>`;
     $('#pay-open').addEventListener('click', () => {
