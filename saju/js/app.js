@@ -375,6 +375,81 @@ function renderStorySections(r, u) {
         }).join('')}
       </div>
       ${u ? '' : '<p class="chart-note">이번 달은 열어 뒀어요. 다음 두 달은 상세 리포트에서 열려요.</p>'}
+    </section>
+
+    <section class="report-sec">
+      <p class="sec-kicker">6장 · 10년의 바람</p>
+      <h2 class="sec-title">내 인생의 큰 바람 지도 🌬️</h2>
+      <p class="chart-note">${r.life.daeunIntro}</p>
+      <div class="daeun-strip">
+        ${r.life.cards.map((d) => {
+          const open = u || d.isPast || d.isNow;
+          const light = d.signal === '좋음' ? '🟢' : d.signal === '보통' ? '🟡' : '🔴';
+          return `
+          <div class="daeun-card ${d.isNow ? 'now' : ''} ${open ? '' : 'future'}">
+            ${d.isNow ? '<p class="daeun-now">지금 부는 바람</p>' : ''}
+            <p class="daeun-age">${d.ageLabel}</p>
+            <div class="daeun-tiles">
+              <span class="mini-tile el-${ELEMENT_INFO[d.stem.element].color}">${d.stem.hanja}</span>
+              <span class="mini-tile el-${ELEMENT_INFO[d.branch.element].color}">${d.branch.hanja}</span>
+            </div>
+            <p class="month-sig">${open ? `${light} ${d.signal}` : `🔒 ${mask(d.signal, u)}`}</p>
+            <p class="daeun-line">${open ? d.line : mask(d.line, u)}</p>
+            ${d.clash ? `<p class="daeun-clash">${open ? '🌀 자리가 크게 움직이는 바람' : mask('🌀 자리가 크게 움직이는 바람', u)}</p>` : ''}
+          </div>`;
+        }).join('')}
+      </div>
+
+      <h2 class="sec-title">지난 10년은 어땠나요 🕰️</h2>
+      <div class="block-card">
+        <p>${r.life.decade.pastLine}</p>
+        <p><b>${r.life.decade.pastChange}</b></p>
+      </div>
+      <h2 class="sec-title">앞으로 10년은요 🔭</h2>
+      <div class="block-card good">
+        <p>${mask(r.life.decade.futureLine, u)}</p>
+        <p><b>${mask(r.life.decade.futureChange, u)}</b></p>
+      </div>
+    </section>
+
+    <section class="report-sec">
+      <p class="sec-kicker">7장 · 3년 점검 구간</p>
+      <h2 class="sec-title">나의 삼재는 언제일까 🧯</h2>
+      <div class="block-card">
+        <p>${r.life.samjae.intro}</p>
+        <p>${r.life.samjae.meaning}</p>
+        <p><b>${mask(r.life.samjae.yearsLine, u)}</b></p>
+        <p>${mask(r.life.samjae.statusLine, u)}</p>
+        <p class="tip">💡 ${r.life.samjae.tip}</p>
+      </div>
+    </section>
+
+    <section class="report-sec">
+      <p class="sec-kicker">8장 · 사랑 이야기</p>
+      <h2 class="sec-title">나의 사랑 스타일 💘</h2>
+      <div class="block-card">
+        ${r.life.love.styleLines.map((l) => `<p>${l}</p>`).join('')}
+        <p>${r.life.love.starText}</p>
+        <p class="tip">💡 ${mask(r.life.love.starTip, u)}</p>
+      </div>
+      <h2 class="sec-title">나와 잘 맞는 사람 💞</h2>
+      <div class="block-card good">
+        <p>${mask(r.life.love.partnerLine, u)}</p>
+        <p><b>${mask(r.life.love.timingLine, u)}</b></p>
+      </div>
+    </section>
+
+    <section class="report-sec">
+      <p class="sec-kicker">9장 · 일과 진로</p>
+      <h2 class="sec-title">나에게 맞는 일 🧑‍💼</h2>
+      <div class="block-card">
+        <p>${r.life.career.mainLine}</p>
+        <p>${r.life.career.styleLine}</p>
+      </div>
+      <div class="block-card good">
+        <p>${mask(r.life.career.jobsLine, u)}</p>
+        <p>${mask(r.life.career.elementLine, u)}</p>
+      </div>
     </section>`;
 }
 
@@ -388,9 +463,10 @@ function renderPaywall() {
         <p class="pay-price"><s>${LIST_PRICE.toLocaleString()}원</s> <b>${PRICE.toLocaleString()}원</b></p>
         <ul class="pay-benefits">
           <li>조심할 점의 해결 방법 전부</li>
-          <li>나를 충전하는 법 (색·활동·습관)</li>
-          <li>속마음 이야기와 미래 그림</li>
-          <li>다음 두 달 신호등과 조언</li>
+          <li>앞으로 10년의 바람과 큰 변화 시기</li>
+          <li>나의 삼재 연도와 지금 상태</li>
+          <li>인연의 때와 나와 잘 맞는 사람</li>
+          <li>나에게 맞는 일과 진로 방향</li>
           <li>우리 둘 궁합 보기 포함 💞</li>
           <li>7일 안에 마음에 안 들면 전액 환불</li>
         </ul>
@@ -409,7 +485,7 @@ function renderPaywall() {
 function renderPaidTail() {
   return `
     <section class="report-sec" id="compat-sec">
-      <p class="sec-kicker">6장 · 우리 둘 궁합</p>
+      <p class="sec-kicker">10장 · 우리 둘 궁합</p>
       <h2 class="sec-title">좋아하는 사람과의 케미 💞</h2>
       <div class="block-card">
         <p>상대가 태어난 날을 알려 주면 둘 사이를 봐 드려요.</p>

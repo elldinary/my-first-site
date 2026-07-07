@@ -6,7 +6,7 @@
  *  - 사용자 노출 문장은 tests/copy-lint.mjs 검사를 통과해야 한다 (§8.5).
  *  - 부정 해석은 반드시 해결 팁과 짝 (P4).
  */
-import { tenGodCategory, monthPillarOf } from './engine.js';
+import { tenGodCategory, monthPillarOf, calculateDaeun, calculateSamjae, branchClash } from './engine.js';
 
 // ---------------------------------------------------------------------------
 // 용어 치환 사전 (PRD §8.3) — 내부 용어는 화면에 그대로 내보내지 않는다
@@ -338,6 +338,180 @@ const SEASON_NOTE = {
 };
 
 // ---------------------------------------------------------------------------
+// 10년의 바람(대운) · 삼재 · 사랑 · 일과 진로 카피
+// ---------------------------------------------------------------------------
+const DAEUN_LINE = {
+  future: {
+    좋음: '순풍이 부는 10년이에요. 벌인 일이 잘 자라요.',
+    보통: '잔잔하게 흐르는 10년이에요. 기본기를 쌓기 좋아요.',
+    조심: '맞바람이 부는 10년이에요. 속도를 줄이면 오히려 단단해져요.',
+  },
+  past: {
+    좋음: '순풍이 불던 시기였어요. 뭔가 쑥 자란 기억이 있을 거예요.',
+    보통: '큰 탈 없이 잔잔하게 흘러간 시기였어요.',
+    조심: '유난히 힘이 들던 시기였을 거예요. 버틴 것만으로 잘한 거예요.',
+  },
+};
+
+const DAEUN_INTRO = '바람의 방향은 10년마다 한 번씩 바뀌어요. 어른들은 이걸 대운이라고 불러요.';
+const SAMJAE_INTRO = '삼재는 12년마다 한 번, 3년 동안 이어지는 점검 구간이에요.';
+const SAMJAE_MEANING = '나쁜 일이 오는 시간이 아니라, 짐을 줄이고 정리하는 시간이에요.';
+const SAMJAE_TIP = '이 시기엔 잠과 건강, 돈 관리만 챙겨도 절반은 성공이에요.';
+const SAMJAE_IN = '지금이 바로 그 구간이에요. 큰 결정은 한 번 더 살펴보고 정하세요.';
+const SAMJAE_OUT = '지금은 그 구간이 아니에요. 마음 놓고 달려도 좋아요.';
+
+const LOVE_PARTNER = {
+  비겁: '내 옆자리엔 친구 같은 사람이 잘 어울려요. 편하게 투닥거릴 수 있는 사람요.',
+  식상: '내 옆자리엔 말이 잘 통하는 사람이 잘 어울려요. 웃음 코드가 맞는 사람요.',
+  재성: '내 옆자리엔 야무지고 다정한 사람이 잘 어울려요. 함께 살림을 꾸릴 사람요.',
+  관성: '내 옆자리엔 듬직하고 반듯한 사람이 잘 어울려요. 약속을 지키는 사람요.',
+  인성: '내 옆자리엔 지혜롭고 포근한 사람이 잘 어울려요. 기댈 수 있는 사람요.',
+};
+
+const LOVE_STYLE = {
+  도화: '나는 가만히 있어도 눈에 띄는 매력이 있어요.',
+  표현형: '좋아하면 표현을 잘하는 편이에요. 그 솔직함이 무기예요.',
+  속앓이형: '좋아해도 티를 잘 안 내는 편이에요. 먼저 한 걸음 다가가 보세요.',
+  한결형: '한번 마음을 주면 잘 변하지 않는 편이에요.',
+};
+
+const LOVE_STAR = {
+  none: { text: '인연이 늦는 게 아니라 천천히 깊어지는 편이에요.', tip: '서두르지 말고 오래 보는 만남을 골라 보세요.' },
+  some: { text: '한 사람을 만나면 오래 가는 편이에요.', tip: '표현을 아끼지 않으면 더 단단해져요.' },
+  many: { text: '다가오는 인연이 많아 고르는 게 일이에요.', tip: '설렘보다 편안함을 기준으로 골라 보세요.' },
+};
+
+const CAREER_MAIN = {
+  비겁: '나는 시켜서 하는 일보다 내가 정한 일에 힘이 나요.',
+  식상: '나는 표현할 곳이 있어야 일이 재미있어요.',
+  재성: '나는 결과가 눈에 보일 때 신이 나요.',
+  관성: '나는 맡은 자리가 분명할 때 잘해요.',
+  인성: '나는 배우면서 크는 일이 잘 맞아요.',
+};
+
+const CAREER_JOBS = {
+  비겁: '내 이름 걸고 하는 일, 몸을 쓰는 일, 팀을 이끄는 일',
+  식상: '말하고 만드는 일, 방송이나 요리, 창작하는 일',
+  재성: '돈과 결과를 다루는 일, 장사와 영업, 운영하는 일',
+  관성: '규칙을 지키고 책임지는 일, 나라일과 관리, 안전을 맡는 일',
+  인성: '배우고 가르치는 일, 글쓰기와 연구, 상담하는 일',
+};
+
+const CAREER_ELEMENT_JOBS = {
+  목: '키우고 가르치는 쪽',
+  화: '사람들 앞에 보여 주는 쪽',
+  토: '사람과 사람을 잇는 쪽',
+  금: '꼼꼼하게 다듬어 완성하는 쪽',
+  수: '깊이 파고들어 기획하는 쪽',
+};
+
+const CAREER_STYLE = {
+  신강: '혼자 끌고 가는 자리가 잘 어울려요.',
+  중화: '이끄는 자리도 돕는 자리도 다 소화해요.',
+  신약: '든든한 팀 안에 있을 때 실력이 활짝 피어요.',
+};
+
+function daeunSignal(d, yongsin) {
+  const els = [d.stem.element, d.branch.element];
+  const good = els.some((e) => yongsin.use.includes(e));
+  const bad = els.some((e) => yongsin.avoid.includes(e));
+  if (good && !bad) return '좋음';
+  if (bad && !good) return '조심';
+  return '보통';
+}
+
+function buildLife(chart, counts, sinsalList, now = Date.now()) {
+  const daeun = calculateDaeun(chart, now);
+  const samjae = calculateSamjae(chart, now);
+  const monthB = chart.pillars.month.branchIdx;
+  const dayB = chart.pillars.day.branchIdx;
+
+  // --- 10년의 바람 타임라인 ---
+  const cards = daeun.list.slice(0, 8).map((d, i) => {
+    const signal = daeunSignal(d, chart.yongsin);
+    const isPast = i < daeun.nowIndex;
+    const isNow = i === daeun.nowIndex;
+    const clash = branchClash(d.branchIdx, monthB) || branchClash(d.branchIdx, dayB);
+    return {
+      ageLabel: `${d.startAge}살~${d.endAge}살`,
+      startAge: d.startAge,
+      stem: d.stem, branch: d.branch,
+      signal, isPast, isNow, clash,
+      line: DAEUN_LINE[isPast ? 'past' : 'future'][signal],
+    };
+  });
+
+  // --- 지난 10년 / 앞으로 10년 / 큰 변화 시기 ---
+  const cur = daeun.list[daeun.nowIndex];
+  const next = daeun.list[Math.min(daeun.nowIndex + 1, daeun.list.length - 1)];
+  const curClash = branchClash(cur.branchIdx, monthB) || branchClash(cur.branchIdx, dayB);
+  const nextClash = branchClash(next.branchIdx, monthB) || branchClash(next.branchIdx, dayB);
+  const young = daeun.ageNow < daeun.startAge;
+  const decade = {
+    pastLine: young
+      ? '아직 첫 바람이 불기 전이에요. 타고난 기운이 그대로 자라는 때예요.'
+      : DAEUN_LINE.past[daeunSignal(cur, chart.yongsin)],
+    pastChange: young
+      ? `첫 바람은 ${daeun.startAge}살 무렵에 불어요.`
+      : `가장 큰 바람이 바뀐 건 ${cur.startAge}살 무렵이에요.` + (curClash ? ' 그때 자리나 환경이 크게 움직였을 거예요.' : ' 그 무렵 마음가짐이 달라졌을 거예요.'),
+    futureLine: DAEUN_LINE.future[daeunSignal(next, chart.yongsin)],
+    futureChange: `다음 바람은 ${next.startAge}살 무렵에 바뀌어요.` + (nextClash ? ' 이때는 자리나 환경이 한 번 크게 움직여요.' : ' 미리 알고 있으면 기회로 만들 수 있어요.'),
+  };
+
+  // --- 삼재 ---
+  const samjaeInfo = {
+    intro: SAMJAE_INTRO,
+    meaning: SAMJAE_MEANING,
+    yearsLine: `나의 점검 구간은 ${samjae.years[0]}년부터 ${samjae.years[2]}년까지예요.`,
+    statusLine: samjae.inSamjae ? SAMJAE_IN : SAMJAE_OUT,
+    tip: SAMJAE_TIP,
+  };
+
+  // --- 사랑 (배우자 자리 = 태어난 날의 아래 글자) ---
+  const innerCat = tenGodCategory(chart.pillars.day.tenGodBranch);
+  const spouseStarCat = chart.meta.gender === 'M' ? '재성' : '관성';
+  const starCount = counts[spouseStarCat];
+  const star = starCount === 0 ? LOVE_STAR.none : starCount >= 3 ? LOVE_STAR.many : LOVE_STAR.some;
+  const styleLines = [];
+  if (sinsalList.includes('도화')) styleLines.push(LOVE_STYLE.도화);
+  if (counts.식상 >= 2) styleLines.push(LOVE_STYLE.표현형);
+  if (counts.식상 === 0) styleLines.push(LOVE_STYLE.속앓이형);
+  if (styleLines.length === 0) styleLines.push(LOVE_STYLE.한결형);
+  // 인연 바람이 부는 해: 배우자 별 기운이 오는 가장 가까운 해
+  const PRODUCES_L = { 목: '화', 화: '토', 토: '금', 금: '수', 수: '목' };
+  const CONTROLS_L = { 목: '토', 토: '수', 수: '화', 화: '금', 금: '목' };
+  const dayEl = chart.dayMaster.element;
+  const spouseEl = chart.meta.gender === 'M'
+    ? CONTROLS_L[dayEl]
+    : Object.keys(CONTROLS_L).find((e) => CONTROLS_L[e] === dayEl);
+  const BR_EL = ['수', '토', '목', '목', '토', '화', '화', '토', '금', '금', '토', '수'];
+  const thisYear = new Date(now).getUTCFullYear();
+  let loveYear = thisYear;
+  for (let y = thisYear; y <= thisYear + 12; y++) {
+    if (BR_EL[((y - 4) % 12 + 12) % 12] === spouseEl) { loveYear = y; break; }
+  }
+  const love = {
+    partnerLine: LOVE_PARTNER[innerCat],
+    styleLines: styleLines.slice(0, 2),
+    starText: star.text,
+    starTip: star.tip,
+    timingLine: `${loveYear}년 무렵, 인연의 바람이 훅 불어와요.`,
+  };
+
+  // --- 일과 진로 ---
+  const sortedCats = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  const domCat = sortedCats[0][0];
+  const career = {
+    mainLine: CAREER_MAIN[domCat],
+    jobsLine: `${CAREER_JOBS[domCat]}이 잘 맞아요.`,
+    elementLine: `그중에서도 ${CAREER_ELEMENT_JOBS[chart.yongsin.use[0]]}이 좋아요.`,
+    styleLine: CAREER_STYLE[chart.strength.verdict],
+  };
+
+  return { daeunIntro: DAEUN_INTRO, cards, decade, samjae: samjaeInfo, love, career };
+}
+
+// ---------------------------------------------------------------------------
 // 도우미
 // ---------------------------------------------------------------------------
 function categoryCounts(chart) {
@@ -479,6 +653,7 @@ export function buildReport(chart) {
     metaphor: dm.metaphor,
     seasonNote,
     past: buildPast(chart, counts, sinsalList, noblemanList),
+    life: buildLife(chart, counts, sinsalList),
     strengths: strengthTop3,
     cautions: cautionTop3,
     lifestyle,
@@ -632,5 +807,15 @@ export function collectStaticCopy() {
   Object.values(SINSAL_PAST).forEach(push);
   Object.values(NOBLEMAN_PAST).forEach(push);
   push(PAST_HOOK); push(PAST_SOFT);
+  Object.values(DAEUN_LINE.future).forEach(push);
+  Object.values(DAEUN_LINE.past).forEach(push);
+  [DAEUN_INTRO, SAMJAE_INTRO, SAMJAE_MEANING, SAMJAE_TIP, SAMJAE_IN, SAMJAE_OUT].forEach(push);
+  Object.values(LOVE_PARTNER).forEach(push);
+  Object.values(LOVE_STYLE).forEach(push);
+  for (const s of Object.values(LOVE_STAR)) { push(s.text); push(s.tip); }
+  Object.values(CAREER_MAIN).forEach(push);
+  Object.values(CAREER_JOBS).forEach(push);
+  Object.values(CAREER_ELEMENT_JOBS).forEach(push);
+  Object.values(CAREER_STYLE).forEach(push);
   return out;
 }
