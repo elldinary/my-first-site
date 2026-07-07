@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="태어난 날만 알려 주면, 내 사주를 초등학생도 이해하는 쉬운 말로 풀어 드려요. 맛보기는 무료!" />
+  <title>쉬운 사주 — 세상에서 제일 쉬운 내 기운 리포트</title>
+  <link rel="stylesheet" href="saju.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔮</text></svg>" />
+</head>
+<body>
+
+<header class="top-bar">
+  <a class="brand" href="./">🔮 쉬운 사주</a>
+  <span class="brand-tag">어려운 말 0%, 쉬운 말 100%</span>
+</header>
+
+<!-- ───────────── 입력 화면 (§7.2) ───────────── -->
+<main id="screen-input">
+  <section class="hero">
+    <p class="hero-badge">맛보기 리포트 무료 🎁</p>
+    <h1>내 사주, 처음으로<br /><em>무슨 말인지 알게</em> 돼요</h1>
+    <p class="hero-sub">
+      태어난 날과 시간만 알려 줘요.<br />
+      어려운 낱말 없이, 쉬운 말로만 풀어 드려요.
+    </p>
+
+    <form id="saju-form" class="input-card" novalidate>
+      <div class="field">
+        <label for="birth-date">태어난 날 (양력)</label>
+        <input type="date" id="birth-date" required min="1900-01-01" max="2050-12-31" />
+        <p class="field-hint">음력만 안다면 달력 앱에서 양력으로 바꿔 적어 주세요.</p>
+      </div>
+
+      <div class="field">
+        <label for="birth-time">태어난 시간</label>
+        <div class="time-row">
+          <input type="time" id="birth-time" value="12:00" />
+          <label class="check-inline">
+            <input type="checkbox" id="time-unknown" />
+            몰라요
+          </label>
+        </div>
+        <p class="field-hint">시간을 모르면 "몰라요"를 눌러도 돼요.</p>
+      </div>
+
+      <div class="field">
+        <label>성별</label>
+        <div class="seg" role="radiogroup">
+          <label class="seg-item"><input type="radio" name="gender" value="F" checked />여자</label>
+          <label class="seg-item"><input type="radio" name="gender" value="M" />남자</label>
+        </div>
+      </div>
+
+      <details class="field collapse">
+        <summary>태어난 도시 고르기 (안 골라도 돼요)</summary>
+        <select id="birth-city">
+          <option value="126.98" selected>서울 (기본)</option>
+          <option value="126.71">인천</option>
+          <option value="127.03">수원</option>
+          <option value="127.38">대전</option>
+          <option value="127.49">청주</option>
+          <option value="127.15">전주</option>
+          <option value="126.85">광주</option>
+          <option value="128.60">대구</option>
+          <option value="129.08">부산</option>
+          <option value="129.31">울산</option>
+          <option value="128.90">강릉</option>
+          <option value="126.53">제주</option>
+        </select>
+        <p class="field-hint">도시를 알면 해 뜨는 시간까지 맞춰서 더 정확해져요.</p>
+      </details>
+
+      <p id="form-error" class="form-error" hidden></p>
+      <button type="submit" class="btn-big">내 사주 무료로 보기 ✨</button>
+      <p class="form-foot">가입도, 카드 등록도 필요 없어요.</p>
+    </form>
+  </section>
+
+  <section class="features">
+    <h2>이런 게 나와요</h2>
+    <div class="feature-grid">
+      <div class="feature"><span>🃏</span><h3>내 기운 카드</h3><p>내 사주 네 기둥을 예쁜 카드로 보여 줘요.</p></div>
+      <div class="feature"><span>🌟</span><h3>나는 어떤 사람?</h3><p>나를 자연에 빗대서 한마디로 알려 줘요.</p></div>
+      <div class="feature"><span>📊</span><h3>다섯 가지 기운</h3><p>나무·불·흙·쇠·물, 내 기운을 그래프로 봐요.</p></div>
+      <div class="feature"><span>🚦</span><h3>앞으로 3개월</h3><p>다가올 석 달을 신호등으로 알려 줘요.</p></div>
+    </div>
+  </section>
+
+  <section class="pricing-teaser">
+    <h2>가격은요</h2>
+    <div class="price-cards">
+      <div class="price-card">
+        <h3>맛보기 리포트</h3>
+        <p class="price-num">무료</p>
+        <ul>
+          <li>내 기운 카드</li>
+          <li>한마디로 나는?</li>
+          <li>다섯 기운 그래프</li>
+        </ul>
+      </div>
+      <div class="price-card featured">
+        <p class="ribbon">출시 기념 51% 할인</p>
+        <h3>상세 리포트</h3>
+        <p class="price-num"><s>39,000원</s> 19,000원</p>
+        <ul>
+          <li>장점 3가지 + 조심할 점 3가지</li>
+          <li>힘을 주는 것 / 지치게 하는 것</li>
+          <li>내 안의 역할들 + 생활 스타일</li>
+          <li>앞으로 3개월 신호등</li>
+          <li>우리 둘 궁합 보기 포함</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="faq">
+    <h2>자주 묻는 질문</h2>
+    <details><summary>정말 쉬운 말로만 나오나요?</summary><p>네! 어려운 낱말이 없는지 기계로 한 번 더 검사해요.</p></details>
+    <details><summary>계산은 정확한가요?</summary><p>절기와 해의 움직임을 따라 계산해요. 검증 문제를 모두 통과했어요.</p></details>
+    <details><summary>태어난 시간을 몰라요.</summary><p>괜찮아요. 시간 없이도 리포트가 나와요. 알면 더 자세해져요.</p></details>
+    <details><summary>환불이 되나요?</summary><p>결제 후 7일 안에 말해 주면 전부 돌려드려요.</p></details>
+  </section>
+</main>
+
+<!-- ───────────── 리포트 화면 (§7.3) ───────────── -->
+<main id="screen-report" hidden>
+  <div id="report-root"></div>
+</main>
+
+<!-- 결제 모달 -->
+<div id="pay-modal" class="modal" hidden>
+  <div class="modal-card">
+    <button class="modal-close" id="pay-close" aria-label="닫기">✕</button>
+    <div id="pay-body"></div>
+  </div>
+</div>
+
+<footer class="site-foot">
+  <p>쉬운 사주는 재미와 자기 이해를 돕는 서비스예요. 중요한 결정은 늘 스스로 내려 주세요.</p>
+  <p>풀이 기준(밤 시간·절기 시각 처리)에 따라 다른 곳과 결과가 조금 다를 수 있어요.</p>
+  <p class="foot-dim">© 2026 쉬운 사주 · 문의 hello@easy-saju.example</p>
+</footer>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
