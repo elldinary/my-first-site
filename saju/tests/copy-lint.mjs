@@ -57,7 +57,8 @@ export async function runCopyLint() {
 
   // (2) 생성된 리포트: 일간 10종·계절·시간모름을 폭넓게 커버
   //     내부 데이터 키(오행 이름, 분류명 등)는 화면에 직접 노출되지 않으므로 제외
-  const skipKeys = new Set(['useEls', 'avoidEls', 'domEl', 'counts', 'mainCat', 'catEasy', 'from']);
+  // stem/branch는 명식 카드용 한자 데이터(§6.1 — 카드에는 한자 노출 허용)
+  const skipKeys = new Set(['useEls', 'avoidEls', 'domEl', 'counts', 'mainCat', 'catEasy', 'from', 'stem', 'branch']);
   const samples = [];
   for (let y = 1970; y <= 2005; y += 3) {
     samples.push({ year: y, month: ((y * 7) % 12) + 1, day: ((y * 3) % 27) + 1, hour: (y % 24), minute: 0, gender: y % 2 ? 'M' : 'F' });

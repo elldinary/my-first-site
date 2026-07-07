@@ -363,7 +363,7 @@ export function calculateSaju(input) {
       hour: timeUnknown ? undefined : hour,
       minute: timeUnknown ? undefined : minute,
       gender, longitude, timeUnknown,
-      solarCorrectionMin,
+      solarCorrectionMin, birthUtc,
       isWinter, isSummer,
     },
     pillars,
@@ -371,6 +371,113 @@ export function calculateSaju(input) {
     elementCount,
     strength: { verdict, score, reasons },
     yongsin: { use, help, avoid, reasons: yongsinReasons },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 대운 (10년 단위 큰 흐름)
+// ---------------------------------------------------------------------------
+
+/** 절(節) 구간 번호 (0=寅월 구간) */
+function termIndexAt(ms) {
+  const lam = sunLongitude(julianDay(ms));
+  return Math.floor(((lam - 315) % 360 + 360) % 360 / 30);
+}
+
+/** fromMs에서 앞(forward=true)/뒤 방향으로 가장 가까운 절입 순간(UTC ms) */
+function nearestTermUtc(fromMs, forward) {
+  const step = (forward ? 1 : -1) * 21600000; // 6시간
+  let t = fromMs;
+  const startIdx = termIndexAt(fromMs);
+  for (let i = 0; i < 160; i++) { // 최대 40일 탐색
+    const nt = t + step;
+    if (termIndexAt(nt) !== startIdx) {
+      let lo = Math.min(t, nt);
+      let hi = Math.max(t, nt);
+      const hiIdx = termIndexAt(hi);
+      for (let k = 0; k < 48; k++) {
+        const mid = (lo + hi) / 2;
+        if (termIndexAt(mid) === hiIdx) hi = mid; else lo = mid;
+      }
+      return hi;
+    }
+    t = nt;
+  }
+  throw new Error('TERM_NOT_FOUND');
+}
+
+function sex60Index(stemIdx, branchIdx) {
+  for (let n = 0; n < 60; n++) {
+    if (n % 10 === stemIdx && n % 12 === branchIdx) return n;
+  }
+  return 0;
+}
+
+// 지지 충(沖): i ↔ i+6
+export function branchClash(a, b) {
+  return (a + 6) % 12 === b;
+}
+
+/**
+ * 대운 계산: 양남음녀 순행 / 음남양녀 역행,
+ * 출생~절입까지 날수 ÷ 3 = 대운 시작 나이(대운수).
+ */
+export function calculateDaeun(chart, now = Date.now()) {
+  const yearStemYang = !STEMS[chart.pillars.year.stemIdx].yin;
+  const forward = (chart.meta.gender === 'M') === yearStemYang;
+  const birthUtc = chart.meta.birthUtc;
+  const boundary = nearestTermUtc(birthUtc, forward);
+  const days = Math.abs(boundary - birthUtc) / 86400000;
+  let startAge = Math.round(days / 3);
+  if (startAge < 1) startAge = 1;
+  if (startAge > 10) startAge = 10;
+
+  const mIdx = sex60Index(chart.pillars.month.stemIdx, chart.pillars.month.branchIdx);
+  const list = [];
+  for (let i = 1; i <= 9; i++) {
+    const idx = ((mIdx + (forward ? i : -i)) % 60 + 60) % 60;
+    const s = idx % 10;
+    const b = idx % 12;
+    list.push({
+      startAge: startAge + (i - 1) * 10,
+      endAge: startAge + i * 10 - 1,
+      stem: { ...STEMS[s] },
+      branch: { hanja: BRANCHES[b].hanja, kor: BRANCHES[b].kor, element: BRANCHES[b].element },
+      stemIdx: s,
+      branchIdx: b,
+    });
+  }
+  let ageNow = Math.floor((now - birthUtc) / (365.2425 * 86400000));
+  if (ageNow < 0) ageNow = 0;
+  let nowIndex = list.findIndex((d) => ageNow >= d.startAge && ageNow <= d.endAge);
+  if (nowIndex === -1) nowIndex = ageNow < startAge ? 0 : list.length - 1;
+  return { forward, startAge, ageNow, nowIndex, list };
+}
+
+// ---------------------------------------------------------------------------
+// 삼재 (띠 기준 12년 주기, 3년 구간)
+// ---------------------------------------------------------------------------
+// 년지 삼합국 → 삼재 드는 지지 3개 (들·눌·날)
+const SAMJAE_BRANCHES = { 수: [2, 3, 4], 금: [11, 0, 1], 화: [8, 9, 10], 목: [5, 6, 7] };
+
+export function calculateSamjae(chart, now = Date.now()) {
+  const group = TRINE_OF_BRANCH[chart.pillars.year.branchIdx];
+  const branches = SAMJAE_BRANCHES[group];
+  let y = new Date(now).getUTCFullYear();
+  if (now < ipchunUtc(y)) y -= 1; // 연도 경계는 입춘 기준
+  const yb = ((y - 4) % 12 + 12) % 12;
+  const pos = branches.indexOf(yb);
+  let startYear;
+  if (pos >= 0) {
+    startYear = y - pos; // 진행 중인 삼재
+  } else {
+    startYear = y + 1;
+    while ((((startYear - 4) % 12) + 12) % 12 !== branches[0]) startYear++;
+  }
+  return {
+    inSamjae: pos >= 0,
+    phase: pos, // 0 들삼재, 1 눌삼재, 2 날삼재, -1 아님
+    years: [startYear, startYear + 1, startYear + 2],
   };
 }
 
